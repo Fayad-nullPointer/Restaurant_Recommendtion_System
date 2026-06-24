@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+import folium
+from IPython.display import display
 import plotly.express as px
 
 # General style
@@ -244,12 +246,13 @@ def plot_missing_percentage(df, figsize=(10, 5)):
     plt.tight_layout()
     plt.show()
 
+
 def plot_geo_locations(df, lat_col, lon_col, hover_col, title="Locations"):
     """
-    Plot geographical locations using latitude and longitude.
+    Plot geographical locations using Folium.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     df : pd.DataFrame
         Dataframe containing location data.
     lat_col : str
@@ -257,21 +260,31 @@ def plot_geo_locations(df, lat_col, lon_col, hover_col, title="Locations"):
     lon_col : str
         Longitude column name.
     hover_col : str
-        Column to display when hovering.
+        Column displayed when clicking/hovering.
     title : str
-        Plot title.
+        Map title.
     """
 
-    fig = px.scatter_geo(
-        df,
-        lat=lat_col,
-        lon=lon_col,
-        hover_name=hover_col
+    # Remove missing coordinates
+    temp = df.dropna(subset=[lat_col, lon_col])
+
+    # Center map around mean location
+    m = folium.Map(
+        location=[
+            temp[lat_col].mean(),
+            temp[lon_col].mean()
+        ],
+        zoom_start=7
     )
 
-    fig.update_layout(
-        title=title,
-        title_x=0.5
-    )
+    # Add points
+    for _, row in temp.iterrows():
+        folium.CircleMarker(
+            location=[row[lat_col], row[lon_col]],
+            radius=3,
+            popup=str(row[hover_col]),
+            fill=True,
+            fill_opacity=0.6
+        ).add_to(m)
 
-    fig.show()
+    display(m)
